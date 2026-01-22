@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imposter Game</title>
+<style>
+    body {
+        margin:0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: #121212;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    .container {
+        max-width: 500px;
+        width: 100%;
+    }
+    h1, h2, h3 {
+        text-align: center;
+    }
+    button {
+        background-color: #1E88E5;
+        color: white;
+        border: none;
+        padding: 12px;
+        margin: 8px 0;
+        width: 100%;
+        font-size: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    button:disabled {
+        background-color: #555;
+        cursor: not-allowed;
+    }
+    input, textarea {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+    }
+    .answer-card {
+        background-color: #333;
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+    .section {
+        display: none;
+    }
+    .active {
+        display: block;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <!-- SETUP -->
+    <div id="setup" class="section active">
+        <h1>IMPOSTER</h1>
+        <div id="players-container"></div>
+        <button id="add-player">+ Add Player</button>
+        <h3>Manage Questions</h3>
+        <input id="real-question-input" placeholder="Real Question">
+        <input id="imposter-question-input" placeholder="Imposter Question">
+        <button id="add-question">Save Question Pair</button>
+        <button id="start-game">Start Game</button>
+    </div>
+
+    <!-- QUESTION -->
+    <div id="question-section" class="section">
+        <h2 id="player-name"></h2>
+        <p id="current-question"></p>
+        <input id="player-answer" placeholder="Type your answer...">
+        <button id="submit-answer">Submit & Pass</button>
+    </div>
+
+    <!-- ANSWER REVEAL -->
+    <div id="answers-section" class="section">
+        <h2>All Answers</h2>
+        <div id="answers-list"></div>
+        <button id="proceed-vote">Proceed to Vote</button>
+    </div>
+
+    <!-- VOTING -->
+    <div id="voting-section" class="section">
+        <h2 id="voter-name"></h2>
+        <div id="vote-buttons"></div>
+    </div>
+
+    <!-- END -->
+    <div id="end-section" class="section">
+        <h1>Results</h1>
+        <p id="real-imposter"></p>
+        <p id="voted-imposter"></p>
+        <h3>Real Question:</h3>
+        <p id="real-question-display"></p>
+        <h3>Imposter Question:</h3>
+        <p id="imposter-question-display"></p>
+        <button id="play-again">Play Again</button>
+    </div>
+</div>
+
+<script>
+// ===== State =====
+let players = ['','',''];
+let currentPlayer = 0;
+let imposterIndex = 0;
+let selectedPair = null;
+let answers = [];
+let votes = {};
+let questionPairs = JSON.parse(localStorage.getItem('questionPairs') || '[]');
+
+// ===== Helper Functions =====
+function saveQuestionPairs() {
+    localStorage.setItem('questionPairs', JSON.stringify(questionPairs));
+}
+function getRandomPair() {
+    if(questionPairs.length === 0) return {real:"Sample real?", imposter:"Sample imposter?"};
+    return questionPairs[Math.floor(Math.random()*questionPairs.length)];
+}
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ===== SETUP =====
+function renderPlayers() {
+    const container = document.getElementById('players-container');
+    container.innerHTML = '';
+    players.forEach((name, idx)=>{
+        const input = document.createElement('input');
+        input.placeholder = `Player ${idx+1} Name`;
+        input.value = name;
+        input.oninput = e => players[idx] = e.target.value;
+        container.appendChild(input);
+    });
+}
+document.getElementById('add-player').onclick = () => {
+    players.push('');
+    renderPlayers();
+}
+document.getElementById('add-question').onclick = ()=>{
+    const real = document.getElementById('real-question-input').value.trim();
+    const imp = document.getElementById('imposter-question-input').value.trim();
+    if(real && imp) {
+        questionPairs.push({real, imp});
+        saveQuestionPairs();
+        document.getElementById('real-question-input').value='';
+        document.getElementById('imposter-question-input').value='';
+        alert('Question pair saved!');
+    }
+}
+document.getElementById('start-game').onclick = ()=>{
+    players = players.filter(p=>p.trim()!=='');
+    if(players.length<3) { alert('Need at least 3 players'); return; }
+    if(questionPairs.length===0){ alert('Add at least 1 question pair'); return; }
+    imposterIndex = Math.floor(Math.random()*players.length);
+    selectedPair = getRandomPair();
+    currentPlayer = 0;
+    answers = [];
+    votes = {};
+    showSection('question-section');
+    renderQuestion();
+}
+function renderQuestion(){
+    const isImposter = currentPlayer===imposterIndex;
+    document.getElementById('player-name').innerText = players[currentPlayer];
+    document.getElementById('current-question').innerText = isImposter ? selectedPair.imposter : selectedPair.real;
+    document.getElementById('player-answer').value = '';
+}
+
+// ===== QUESTION ANSWER =====
+document.getElementById('submit-answer').onclick = ()=>{
+    const ans = document.getElementById('player-answer').value.trim();
+    answers.push({name: players[currentPlayer], answer: ans});
+    currentPlayer++;
+    if(currentPlayer>=players.length){
+        renderAnswers();
+        showSection('answers-section');
+    } else {
+        renderQuestion();
+    }
+}
+
+// ===== ANSWERS REVEAL =====
+function renderAnswers(){
+    const container = document.getElementById('answers-list');
+    container.innerHTML='';
+    answers.forEach(a=>{
+        const div = document.createElement('div');
+        div.className='answer-card';
+        div.innerHTML=`<strong>${a.name}</strong><br>${a.answer}`;
+        container.appendChild(div);
+    });
+}
+document.getElementById('proceed-vote').onclick = ()=>{
+    currentPlayer=0;
+    renderVote();
+    showSection('voting-section');
+}
+
+// ===== VOTING =====
+function renderVote(){
+    document.getElementById('voter-name').innerText=`Vote: ${players[currentPlayer]}`;
+    const container = document.getElementById('vote-buttons');
+    container.innerHTML='';
+    players.forEach((p, idx)=>{
+        const btn = document.createElement('button');
+        btn.innerText=p;
+        btn.onclick = ()=>{
+            votes[idx] = (votes[idx]||0)+1;
+            currentPlayer++;
+            if(currentPlayer>=players.length){
+                showResults();
+                showSection('end-section');
+            } else {
+                renderVote();
+            }
+        };
+        container.appendChild(btn);
+    });
+}
+
+// ===== END RESULTS =====
+function showResults(){
+    const realImp = document.getElementById('real-imposter');
+    const votedImp = document.getElementById('voted-imposter');
+    realImp.innerText=`🕵️ Real Imposter: ${players[imposterIndex]}`;
+    let maxVotes=-1, votedOut='';
+    for(const idx in votes){
+        if(votes[idx]>maxVotes){
+            maxVotes=votes[idx];
+            votedOut=players[idx];
+        }
+    }
+    votedImp.innerText=`🗳️ Voted Imposter: ${votedOut}`;
+    document.getElementById('real-question-display').innerText = selectedPair.real;
+    document.getElementById('imposter-question-display').innerText = selectedPair.imposter;
+}
+document.getElementById('play-again').onclick = ()=>{
+    showSection('setup');
+    renderPlayers();
+}
+
+renderPlayers();
+</script>
+</body>
+</html>
