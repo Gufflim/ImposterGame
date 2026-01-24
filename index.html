@@ -151,7 +151,7 @@ document.getElementById('add-question').onclick = ()=>{
     const real = document.getElementById('real-question-input').value.trim();
     const imp = document.getElementById('imposter-question-input').value.trim();
     if(real && imp) {
-        questionPairs.push({real, imp});
+        questionPairs.push({ real, imposter: imp });
         saveQuestionPairs();
         document.getElementById('real-question-input').value='';
         document.getElementById('imposter-question-input').value='';
