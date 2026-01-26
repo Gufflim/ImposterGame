@@ -78,6 +78,9 @@
         <textarea id="bulk-questions-input" placeholder="Paste questions here, one per line, format: real question | imposter question" rows="6"></textarea>
         <button id="add-bulk-questions">Add All Questions</button>
 
+        <!-- ===== Clear Questions Button ===== -->
+        <button id="clear-questions">Clear All Questions</button>
+
         <button id="start-game">Start Game</button>
     </div>
 
@@ -188,6 +191,15 @@ document.getElementById('add-bulk-questions').onclick = () => {
         alert(`${addedCount} question pairs added!`);
     } else {
         alert('No valid question pairs found. Make sure each line has "real | imposter".');
+    }
+}
+
+// ===== Clear All Questions =====
+document.getElementById('clear-questions').onclick = () => {
+    if(confirm("Are you sure you want to delete all saved questions?")) {
+        questionPairs = [];
+        saveQuestionPairs();
+        alert("All questions cleared!");
     }
 }
 
