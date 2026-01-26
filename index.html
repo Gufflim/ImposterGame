@@ -67,10 +67,17 @@
         <h1>IMPOSTER</h1>
         <div id="players-container"></div>
         <button id="add-player">+ Add Player</button>
+
         <h3>Manage Questions</h3>
         <input id="real-question-input" placeholder="Real Question">
         <input id="imposter-question-input" placeholder="Imposter Question">
         <button id="add-question">Save Question Pair</button>
+
+        <!-- ===== Bulk Questions Added ===== -->
+        <h3>Bulk Add Questions</h3>
+        <textarea id="bulk-questions-input" placeholder="Paste questions here, one per line, format: real question | imposter question" rows="6"></textarea>
+        <button id="add-bulk-questions">Add All Questions</button>
+
         <button id="start-game">Start Game</button>
     </div>
 
@@ -158,6 +165,32 @@ document.getElementById('add-question').onclick = ()=>{
         alert('Question pair saved!');
     }
 }
+
+// ===== Bulk Question Input =====
+document.getElementById('add-bulk-questions').onclick = () => {
+    const bulkText = document.getElementById('bulk-questions-input').value.trim();
+    if (!bulkText) return alert('Paste some questions first!');
+    
+    const lines = bulkText.split('\n');
+    let addedCount = 0;
+    
+    lines.forEach(line => {
+        const parts = line.split('|').map(p => p.trim());
+        if (parts.length === 2 && parts[0] && parts[1]) {
+            questionPairs.push({ real: parts[0], imposter: parts[1] });
+            addedCount++;
+        }
+    });
+    
+    if (addedCount > 0) {
+        saveQuestionPairs();
+        document.getElementById('bulk-questions-input').value = '';
+        alert(`${addedCount} question pairs added!`);
+    } else {
+        alert('No valid question pairs found. Make sure each line has "real | imposter".');
+    }
+}
+
 document.getElementById('start-game').onclick = ()=>{
     players = players.filter(p=>p.trim()!=='');
     if(players.length<3) { alert('Need at least 3 players'); return; }
