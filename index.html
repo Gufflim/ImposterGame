@@ -73,12 +73,9 @@
         <input id="imposter-question-input" placeholder="Imposter Question">
         <button id="add-question">Save Question Pair</button>
 
-        <!-- ===== Bulk Questions Added ===== -->
         <h3>Bulk Add Questions</h3>
         <textarea id="bulk-questions-input" placeholder="Paste questions here, one per line, format: real question | imposter question" rows="6"></textarea>
         <button id="add-bulk-questions">Add All Questions</button>
-
-        <!-- ===== Clear Questions Button ===== -->
         <button id="clear-questions">Clear All Questions</button>
 
         <button id="start-game">Start Game</button>
@@ -95,6 +92,7 @@
     <!-- ANSWER REVEAL -->
     <div id="answers-section" class="section">
         <h2>All Answers</h2>
+        <p><strong>Real Question:</strong> <span id="display-real-question"></span></p>
         <div id="answers-list"></div>
         <button id="proceed-vote">Proceed to Vote</button>
     </div>
@@ -114,7 +112,8 @@
         <p id="real-question-display"></p>
         <h3>Imposter Question:</h3>
         <p id="imposter-question-display"></p>
-        <button id="play-again">Play Again</button>
+        <button id="next-round">Next Round</button>
+        <button id="play-again">Restart Game</button>
     </div>
 </div>
 
@@ -203,7 +202,10 @@ document.getElementById('clear-questions').onclick = () => {
     }
 }
 
-document.getElementById('start-game').onclick = ()=>{
+// ===== START GAME =====
+document.getElementById('start-game').onclick = startRound;
+
+function startRound() {
     players = players.filter(p=>p.trim()!=='');
     if(players.length<3) { alert('Need at least 3 players'); return; }
     if(questionPairs.length===0){ alert('Add at least 1 question pair'); return; }
@@ -215,6 +217,7 @@ document.getElementById('start-game').onclick = ()=>{
     showSection('question-section');
     renderQuestion();
 }
+
 function renderQuestion(){
     const isImposter = currentPlayer===imposterIndex;
     document.getElementById('player-name').innerText = players[currentPlayer];
@@ -245,6 +248,8 @@ function renderAnswers(){
         div.innerHTML=`<strong>${a.name}</strong><br>${a.answer}`;
         container.appendChild(div);
     });
+    // Show real question
+    document.getElementById('display-real-question').innerText = selectedPair.real;
 }
 document.getElementById('proceed-vote').onclick = ()=>{
     currentPlayer=0;
@@ -290,7 +295,19 @@ function showResults(){
     document.getElementById('real-question-display').innerText = selectedPair.real;
     document.getElementById('imposter-question-display').innerText = selectedPair.imposter;
 }
-document.getElementById('play-again').onclick = ()=>{
+
+// ===== NEXT ROUND WITHOUT SETUP =====
+document.getElementById('next-round').onclick = () => {
+    selectedPair = getRandomPair();
+    currentPlayer = 0;
+    answers = [];
+    votes = {};
+    showSection('question-section');
+    renderQuestion();
+}
+
+// ===== RESTART GAME =====
+document.getElementById('play-again').onclick = () => {
     showSection('setup');
     renderPlayers();
 }
